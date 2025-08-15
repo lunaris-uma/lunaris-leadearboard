@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Lunaris Fan Leaderboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            text-align: center;
+            background: url('resources/bg.jpg') no-repeat center center fixed;
+            background-size: cover; 
+            margin: 0;
+            padding: 0;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3); /* dark overlay */
+            z-index: -1;
+        }
+
+        h1 {
+                font-size: 2.5em;
+                font-weight: bold;
+                margin-top: 30px;
+                color:#ffffff;
+                text-shadow: 2px 2px 6px rgba(0, 0, 0, 1);
+        }
+        table {
+            margin: auto;
+            border-collapse: collapse;
+            width: 40%;
+            background: rgba(255, 255, 255, 0.98); /* almost solid white */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25); /* stronger shadow */
+            border-radius: 12px;
+            overflow: hidden; /* ensures rounded corners apply to header */
+            backdrop-filter: blur(6px); /* subtle frosted glass effect */
+        }
+
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; }
+        td.gain {
+            font-weight: bold;
+            color: #28a745; 
+        }
+
+        th { background: #ffce54; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        tr.first-place td {
+            background-color: #ffeb99; 
+            font-weight: bold;
+            color: #333;
+        }
+
+        tr.second-place td {
+            background-color: #e5e5e5;
+            font-weight: bold;
+            color: #333;
+        }
+
+        tr.third-place td {
+            background-color: #f6d6b8; 
+            font-weight: bold;
+            color: #333;
+        }
+
+
+    </style>
+</head>
+<body>
+    <h1> Lunaris Fan Leaderboard (August 15) </h1>
+
+    <table id="leaderboard">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Fan Count</th>
+                <th>Fans Gained </th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <script>
+        Promise.all([
+            fetch('resources/initialFanCount.json').then(res => res.json()),
+            fetch('resources/currentFanCount.json').then(res => res.json())
+        ])
+        .then(([initialData, currentData]) => {
+            // Create maps for quick lookup
+            const initialMap = {};
+            initialData.forEach(player => {
+                initialMap[player.Name] = player['Fan Count'];
+            });
+        
+            const currentMap = {};
+            currentData.forEach(player => {
+                currentMap[player.Name] = player['Fan Count'];
+            });
+        
+            // Get all unique player names
+            const allNames = new Set([
+                ...initialData.map(p => p.Name),
+                ...currentData.map(p => p.Name)
+            ]);
+        
+            // Merge and calculate gains
+            const mergedData = Array.from(allNames).map(name => {
+                const initialCount = initialMap[name] || 0;
+                const currentCount = currentMap[name] || 0;
+                const gained = currentCount - initialCount;
+                return {
+                    Name: name,
+                    "Fan Count": currentCount,
+                    "Fans Gained": gained
+                };
+            });
+        
+            // Sort by fans gained (highest first)
+            mergedData.sort((a, b) => b['Fans Gained'] - a['Fans Gained']);
+        
+            // Display table
+            let tbody = document.querySelector('#leaderboard tbody');
+        
+            mergedData.forEach((row, index) => {
+                let gainedDisplay = row['Fans Gained'] > 0 
+                    ? `<span style="color: green;">+${row['Fans Gained'].toLocaleString()}</span>` 
+                    : `<span style="color: red;">${row['Fans Gained'].toLocaleString()}</span>`;
+        
+                let tr = document.createElement('tr');
+        
+                // Add special classes for 1st, 2nd, 3rd place
+                if (index === 0) tr.classList.add('first-place');
+                else if (index === 1) tr.classList.add('second-place');
+                else if (index === 2) tr.classList.add('third-place');
+        
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${row['Name']}</td>
+                    <td>${row['Fan Count'].toLocaleString()}</td>
+                    <td class="gain">${gainedDisplay}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+        
+        </script>
+          
+</body>
+</html>
